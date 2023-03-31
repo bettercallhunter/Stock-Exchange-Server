@@ -4,7 +4,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import ForeignKeyConstraint, ForeignKey
 # create the engine and session
-from sqlalchemy import desc
+from sqlalchemy.ext.mutable import MutableDict
+from sqlalchemy import desc, PickleType
 from sqlalchemy import create_engine
 from sqlalchemy import select
 from typing import List
@@ -15,11 +16,12 @@ from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 # set up the connection parameters
+from sqlalchemy import func
 from sqlalchemy import create_engine
-
-from sqlalchemy import create_engine
+from sqlalchemy import DateTime
 from sqlalchemy_utils import database_exists, create_database
 
+from datetime import datetime
 engine = create_engine("postgresql://postgres:0000@localhost:5432/stock")
 if not database_exists(engine.url):
     create_database(engine.url)
@@ -58,15 +60,67 @@ class Account(Base):
     position = Column(JSON)
 
 
-class Symbol(Base):
-    __tablename__ = 'symbol'
+class Cancel(Base):
+    __tablename__ = 'cancel'
     id = Column(Integer, primary_key=True)
     sym = Column(String, nullable=False)
-    number = Column(Integer, nullable=False)
-    account_id: Mapped[int] = mapped_column(ForeignKey("account.id"))
+    amount = Column(Integer, nullable=False)
+    limit = Column(Integer, nullable=False)
+    account_id: Mapped[int] = mapped_column(
+        ForeignKey("account.id", ondelete='CASCADE'))
+    time = Column(DateTime)
+
+    def __repr__(self):
+        return f"Order({self.id}, {self.sym}, {self.amount}, {self.limit}, {self.account_id})"
 
 
-Base.metadata.drop_all(engine, checkfirst=True)
-Base.metadata.create_all(engine)
+class Executed(Base):
+    __tablename__ = 'executed'
+    id = Column(Integer, primary_key=True)
+    sym = Column(String, nullable=False)
+    amount = Column(Integer, nullable=False)
+    limit = Column(Integer, nullable=False)
+    account_id: Mapped[int] = mapped_column(
+        ForeignKey("account.id", ondelete='CASCADE'))
+    time = Column(DateTime)
+
+    def __repr__(self):
+        return f"Order({self.id}, {self.sym}, {self.amount}, {self.limit}, {self.account_id})"
+
+
+class Open(Base):
+    __tablename__ = 'open'
+    id = Column(Integer, primary_key=True)
+    sym = Column(String, nullable=False)
+    amount = Column(Integer, nullable=False)
+    limit = Column(Integer, nullable=False)
+    account_id: Mapped[int] = mapped_column(
+        ForeignKey("account.id", ondelete='CASCADE'))
+    time = Column(DateTime)
+
+    def __repr__(self):
+        return f"Order({self.id}, {self.sym}, {self.amount}, {self.limit}, {self.account_id})"
+
+
+def init_db():
+    Base.metadata.drop_all(engine, checkfirst=True)
+    Base.metadata.create_all(engine)
+
+
+def getMaxId():
+    max_cancel_id = session.query(func.max(Cancel.id)).scalar()
+    if max_cancel_id is None:
+        max_cancel_id = 0
+    max_executed_id = session.query(func.max(Executed.id)).scalar()
+    if max_executed_id is None:
+        max_executed_id = 0
+    max_open_id = session.query(func.max(Open.id)).scalar()
+    if max_open_id is None:
+        max_open_id = 0
+    maxId = max(max_cancel_id, max_executed_id, max_open_id)
+
+    return maxId
+
+
 Session = sessionmaker(bind=engine)
 session = Session()
