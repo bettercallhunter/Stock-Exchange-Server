@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <transactions id="123456"> 
-  <order sym="SYM" amount="-120" limit="10"/>
-  <cancel id="2"/>
+  <!-- <order sym="SYM" amount="10" limit="100"/> -->
+  <cancel id="4"/>
 </transactions>
 

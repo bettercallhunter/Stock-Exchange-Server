@@ -35,17 +35,22 @@ def query_response(id, open, canceled, executed):
 # sym is true if create symbol
 
 
-def create_response(id, success, sym=None):
-    root = ET.Element('results')
+def create_response(root, id, success, sym=None, msg=None):
     if not success:
         if sym:
             errorElement = ET.SubElement(root, 'error', {'sym': sym, 'id': id})
         else:
             errorElement = ET.SubElement(root, 'error', {'id': id})
         if sym is None:
-            errorElement.text = "Account Already Exists"
+            if msg is None:
+                errorElement.text = "Account Already Exists"
+            else:
+                errorElement.text = msg
         else:
-            errorElement.text = "Cannot find account"
+            if msg is None:
+                errorElement.text = "Cannot find account"
+            else:
+                errorElement.text = msg
 
     else:
         if sym is None:
@@ -54,6 +59,34 @@ def create_response(id, success, sym=None):
             createElement = ET.SubElement(
                 root, 'created', {'sym': sym, 'id': id})
 
-    xml_string = ET.tostring(root, encoding='utf8', method='xml').decode()
-    print(xml_string)
+    return ET
+
+
+def order_response(root, success, sym, amount, limit, msg, id=-1):
+    if not success:
+        errorElement = ET.SubElement(
+            root, 'error', {'sym': sym, 'amount': str(amount), 'limit': limit})
+
+        errorElement.text = msg
+    else:
+        createElement = ET.SubElement(
+            root, 'opened', {'sym': sym, 'amount': str(amount), 'limit': str(limit), 'id': str(id)})
+    return ET
+
+
+def cancel_response_success(root,id, openTime, openShare, executedTime, executedShare, price, hasExecuted=False):
+    canceledElement = ET.SubElement(root, 'canceled', {'id': str(id)})
+    cancalled = ET.SubElement(canceledElement, 'canceled', {
+                              'shares': str(openShare), 'time': str(openTime)})
+    if hasExecuted:
+        executed = ET.SubElement(canceledElement, 'executed', {'shares': str(
+            executedShare), 'price': str(price), 'time': str(executedTime)})
+    return ET
+
+
+def cancel_response_error(root, sym, amount, limit, msg):
+    errorElement = ET.SubElement(
+        root, 'error', {'sym': sym, 'amount': str(amount), 'limit': limit})
+
+    errorElement.text = msg
     return ET

@@ -1,8 +1,8 @@
 173
   <?xml version="1.0" encoding="UTF-8"?>
   <create>
-    <account id="12350" balance="1000"/>
-    <symbol sym="SPG">
-      <account id="12350">100000</account>
+    <account id="123532222" balance="1000"/>
+    <symbol sym="SPA">
+      <account id="122">100000</account>
     </symbol>
 </create>
