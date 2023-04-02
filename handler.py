@@ -3,6 +3,7 @@ from database import *
 from datetime import datetime
 from sqlalchemy import delete
 from sqlalchemy.orm.attributes import flag_modified
+from response import *
 
 
 def handle(root):
@@ -46,7 +47,18 @@ def handleCancel(child, account_id):
 
 
 def handleQuery(root):
-    pass
+    id = root.attrib['id']
+    # open
+    open = session.query(Open).filter_by(id=id).first()
+    # canceled
+    canceled = session.query(Cancel).filter_by(id=id).first() 
+    # executed
+    executed = session.query(Executed).filter_by(id=id).all()
+    
+    query_response(id,open,canceled,executed)
+    
+        
+        
 
 
 def handleTransactions(root):

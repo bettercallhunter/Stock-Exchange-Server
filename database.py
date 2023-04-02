@@ -77,6 +77,7 @@ class Cancel(Base):
 class Executed(Base):
     __tablename__ = 'executed'
     id = Column(Integer, primary_key=True)
+    transId = Column(Integer, nullable=False)
     sym = Column(String, nullable=False)
     amount = Column(Integer, nullable=False)
     limit = Column(Integer, nullable=False)
