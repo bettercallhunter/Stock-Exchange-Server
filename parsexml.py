@@ -18,8 +18,8 @@ from bs4 import BeautifulSoup
 # if __name__ == "main":
 # init_db()
 
-with open('query.xml', 'r') as f:
-    # with open('create.xml', 'r') as f:
+#with open('query.xml', 'r') as f:
+with open('create.xml', 'r') as f:
     input_string = f.read()
     xml_string = input_string.split('\n', 1)[1].strip()
     root = ET.fromstring(xml_string)

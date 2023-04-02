@@ -39,7 +39,7 @@ def handleCancel(child, account_id):
     stmt = delete(Open).where(Open.id == id)
     session.execute(stmt)
     # add to cancel
-    #########WHAT IS THE TIME OF CANCEL?##########
+    ######### WHAT IS THE TIME OF CANCEL?##########
     cancel = Cancel(id=id, sym=order.sym, amount=order.amount,
                     limit=order.limit, account_id=account_id, time=datetime.now())
     session.add(cancel)
@@ -51,14 +51,11 @@ def handleQuery(root):
     # open
     open = session.query(Open).filter_by(id=id).first()
     # canceled
-    canceled = session.query(Cancel).filter_by(id=id).first() 
+    canceled = session.query(Cancel).filter_by(id=id).first()
     # executed
     executed = session.query(Executed).filter_by(id=id).all()
-    
-    query_response(id,open,canceled,executed)
-    
-        
-        
+
+    query_response(id, open, canceled, executed)
 
 
 def handleTransactions(root):
@@ -120,30 +117,46 @@ def handleCreate(root):
             hasAccount = session.query(Account).filter_by(id=id).first()
             if hasAccount is not None:
                 print("account already exists")
+                # create_response(id, False)
                 continue
             new_account = Account(id=id, balance=balance,
                                   position=position)
 
             session.add(new_account)
-
+            session.commit()
+            # create_response(id, True)
         elif child.tag == 'symbol':
             account = child.find('account').attrib['id']
             sym = child.attrib['sym']
             amount = child.find('account').text
             selected = session.query(Account).filter_by(id=account).first()
             if selected is None:
+                # create_response(id, False, sym)
                 print("account does not exist")
                 return
             if selected.position is None:
+                # create_response(id, True, sym)
                 selected.position = {sym: amount}
                 flag_modified(selected, "position")
             elif sym not in selected.position:
+                # create_response(id, True, sym)
                 selected.position[sym] = amount
                 flag_modified(selected, "position")
             else:
                 selected.position[sym] = int(
                     selected.position[sym]) + int(amount)
                 flag_modified(selected, "position")
+                # create_response(id, True, sym)
     session.flush()
     session.commit()
     return
+
+
+def response(id):
+    root = ET.Element('results')
+    if FLAG == 1:
+        error_elem = ET.SubElement(root, 'error', {'id': id})
+    elif FLAG == 0:
+        success_elem = ET.SubElement(root, 'created', {'id': id})
+
+    return FLAG
