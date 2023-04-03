@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<transactions id="123456"> 
-  <order sym="SYM" amount="-120" limit="10"/>
-  <cancel id="2"/>
+<transactions id="125"> 
+  <order sym="SPG" amount="3" limit="15"/>
+  <order sym="SPG" amount="2" limit="17"/>
+  <order sym="SPG" amount="4" limit="15"/>
 </transactions>
 

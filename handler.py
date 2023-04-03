@@ -4,6 +4,7 @@ from datetime import datetime
 from sqlalchemy import delete
 from sqlalchemy.orm.attributes import flag_modified
 from response import *
+from match import *
 
 
 def handle(root):
@@ -53,14 +54,11 @@ def handleQuery(root):
     # canceled
     canceled = session.query(Cancel).filter_by(id=id).first() 
     # executed
-    executed = session.query(Executed).filter_by(id=id).all()
+    executed = session.query(Executed).filter_by(transId=id).all()
     
     query_response(id,open,canceled,executed)
     
         
-        
-
-
 def handleTransactions(root):
     for child in root:
         if child.tag == 'order':
@@ -109,6 +107,7 @@ def handleOrder(child, account_id) -> None:
     session.add(new_order)
     session.commit()
     print("order placed")
+    match_order(sym)
 
 
 def handleCreate(root):
