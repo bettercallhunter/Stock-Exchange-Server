@@ -76,7 +76,7 @@ class Cancel(Base):
 
 class Executed(Base):
     __tablename__ = 'executed'
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     transId = Column(Integer, nullable=False)
     sym = Column(String, nullable=False)
     amount = Column(Integer, nullable=False)
@@ -124,4 +124,5 @@ def getMaxId():
 
 
 Session = sessionmaker(bind=engine)
+Base.metadata.create_all(engine)
 session = Session()
