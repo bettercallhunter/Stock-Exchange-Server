@@ -128,7 +128,7 @@ def handleOrder(Responseroot, child, account_id) -> None:
 
     session.add(new_order)
     session.commit()
-    print("order placed")
+
 
 
 def handleCreate(root):
