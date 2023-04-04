@@ -8,11 +8,17 @@ from match import *
 
 
 def handle(root):
+    rootString = ET.tostring(root, encoding='utf8', method='xml').decode()
+    print(rootString)
     if root.tag == "create":
-        handleCreate(root)
+        responseRoot = handleCreate(root)
 
     elif root.tag == "transactions":
-        handleTransactions(root)
+        responseRoot = handleTransactions(root)
+    responseString = ET.tostring(
+        responseRoot, encoding='utf8', method='xml').decode()
+
+    return responseString
 
 
 def handleCancel(Responseroot, child, account_id):
@@ -21,14 +27,13 @@ def handleCancel(Responseroot, child, account_id):
     order = session.scalar(stmt)
     if order is None:
         msg = "order does not exist"
-        cancel_response_error(Responseroot,id,msg)
+        cancel_response_error(Responseroot, id, msg)
         return
 
-    if str(order.account_id )!= account_id:
+    if str(order.account_id) != account_id:
         msg = "You are not authrized to cancel this order"
-        cancel_response_error(Responseroot,id,msg)
+        cancel_response_error(Responseroot, id, msg)
         return
-
 
     amount = order.amount
     limit = order.limit
@@ -47,7 +52,6 @@ def handleCancel(Responseroot, child, account_id):
     stmt = delete(Open).where(Open.id == id)
     session.execute(stmt)
     # add to cancel
-    ######### WHAT IS THE TIME OF CANCEL?##########
     cancel = Cancel(id=id, sym=order.sym, amount=order.amount,
                     limit=order.limit, account_id=account_id, time=datetime.now())
 
@@ -75,10 +79,10 @@ def handleQuery(Responseroot, root):
     canceled = session.query(Cancel).filter_by(id=id).first()
     # executed
     executed = session.query(Executed).filter_by(transId=id).all()
-    
-    query_response(Responseroot, id,open,canceled,executed)
-    
-        
+
+    query_response(Responseroot, id, open, canceled, executed)
+
+
 def handleTransactions(root):
     Responseroot = ET.Element('results')
     for child in root:
@@ -88,10 +92,7 @@ def handleTransactions(root):
             handleCancel(Responseroot, child, root.attrib['id'])
         elif child.tag == 'query':
             handleQuery(Responseroot, child)
-
-    xml_string = ET.tostring(
-        Responseroot, encoding='utf8', method='xml').decode()
-    print(xml_string)
+    return Responseroot
 
 
 def handleOrder(Responseroot, child, account_id) -> None:
@@ -136,7 +137,6 @@ def handleOrder(Responseroot, child, account_id) -> None:
 
     session.add(new_order)
     session.commit()
-    print("order placed")
     match_order(sym)
 
 
@@ -149,8 +149,8 @@ def handleCreate(root):
             position = child.attrib.get('position')
             hasAccount = session.query(Account).filter_by(id=id).first()
             if hasAccount is not None:
-                print("account already exists")
-                create_response(Responseroot, id, False)
+                msg = "account already exists"
+                create_response(Responseroot, id, False, None, msg)
                 continue
             new_account = Account(id=id, balance=balance,
                                   position=position)
@@ -183,7 +183,5 @@ def handleCreate(root):
 
     session.flush()
     session.commit()
-    xml_string = ET.tostring(
-        Responseroot, encoding='utf8', method='xml').decode()
-    print(xml_string)
-    return
+
+    return Responseroot

@@ -1,10 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
-<transactions id="123456"> 
-  <order sym="SYM" amount="10" limit="100"/>
-  <cancel id="6"/>
-  <cancel id="7"/>
-  <query id="7"/>
-  <query id="8"/>
-</transactions>
-
+292
+<?xml version='1.0' encoding='UTF-8'?>
+<transactions id="00000"><order sym="SYX" amount="48" limit="650" /><order sym="SYX" amount="41" limit="188" /><order sym="SYM" amount="13" limit="1" /><order sym="SYX" amount="30" limit="278" /><order sym="SYX" amount="22" limit="152" /></transactions>
