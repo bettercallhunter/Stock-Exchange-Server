@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <transactions id="125"> 
-  <order sym="SPG" amount="1" limit="30"/>
+  <order sym="SPG" amount="4" limit="30"/>
 </transactions>
 
