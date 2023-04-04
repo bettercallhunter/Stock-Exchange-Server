@@ -17,18 +17,25 @@ def handle(root):
 
 def handleCancel(Responseroot, child, account_id):
     id = child.attrib['id']
-    stmt = select(Open).where(Open.account_id ==
-                              account_id).where(Open.id == id)
+    stmt = select(Open).where(Open.id == id)
     order = session.scalar(stmt)
     if order is None:
-        print("order does not exist")
+        msg = "order does not exist"
+        cancel_response_error(Responseroot,id,msg)
         return
+
+    if str(order.account_id )!= account_id:
+        msg = "You are not authrized to cancel this order"
+        cancel_response_error(Responseroot,id,msg)
+        return
+
+
     amount = order.amount
     limit = order.limit
     # modify account balance and position
     stmt = select(Account).where(Account.id == account_id)
     account = session.scalar(stmt)
-    ######### WHAT IF AFTER CANCEL, THE BALANCE IS NEGATIVE?##########
+
     # if it is a buy order
     if int(amount) > 0:
         account.balance += amount * limit
