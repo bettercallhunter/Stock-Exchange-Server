@@ -79,9 +79,9 @@ def cancel_response_success(root,id, openTime, openShare, executedTime, executed
     return ET
 
 
-def cancel_response_error(root, sym, amount, limit, msg):
+def cancel_response_error(root,id,msg):
     errorElement = ET.SubElement(
-        root, 'error', {'sym': sym, 'amount': str(amount), 'limit': limit})
+        root, 'error', {'id':id})
 
     errorElement.text = msg
     return ET
