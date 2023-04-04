@@ -60,7 +60,7 @@ def handleCancel(Responseroot, child, account_id):
     session.commit()
 
 
-def handleQuery(root):
+def handleQuery(Responseroot, root):
     id = root.attrib['id']
     # open
     open = session.query(Open).filter_by(id=id).first()
@@ -69,7 +69,7 @@ def handleQuery(root):
     # executed
     executed = session.query(Executed).filter_by(transId=id).all()
     
-    query_response(id,open,canceled,executed)
+    query_response(Responseroot, id,open,canceled,executed)
     
         
 def handleTransactions(root):
@@ -80,7 +80,7 @@ def handleTransactions(root):
         elif child.tag == 'cancel':
             handleCancel(Responseroot, child, root.attrib['id'])
         elif child.tag == 'query':
-            handleQuery(child)
+            handleQuery(Responseroot, child)
 
     xml_string = ET.tostring(
         Responseroot, encoding='utf8', method='xml').decode()

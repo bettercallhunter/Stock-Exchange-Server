@@ -1,9 +1,9 @@
 import xml.etree.ElementTree as ET
 
 
-def query_response(id, open, canceled, executed):
+def query_response(root, id, open, canceled, executed):
     # Create the root element
-    status = ET.Element("status", {"id": id})
+    status = ET.SubElement(root, "status", {"id": id})
     if open is not None:
         shares = str(open.amount)
         # Create the "open" element
@@ -24,13 +24,8 @@ def query_response(id, open, canceled, executed):
             # Create the "executed" element
             executed_elem = ET.SubElement(
                 status, "executed", {"shares": shares, "price": price, "time": time})
-    # Create the XML tree
-    tree = ET.ElementTree(status)
-    # Convert the XML tree to a string and print it
-    xml_string = ET.tostring(status, encoding="unicode")
-    print(xml_string)
 
-    return tree
+    return ET
 
 # sym is true if create symbol
 
