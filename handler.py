@@ -101,11 +101,12 @@ def handleOrder(Responseroot, child, account_id) -> None:
     # first, check if there is a match
     stmt = select(Account).where(Account.id == account_id)
     account = session.execute(stmt).fetchone()
+    
+    if account is None:
+        msg = "account does not exist"
+        order_response(Responseroot, False, sym, amount, limit, msg)
+        return
     with session.begin_nested():
-        if account is None:
-            msg = "account does not exist"
-            order_response(Responseroot, False, sym, amount, limit, msg)
-            return
         # if it is a buy order
         if int(amount) > 0:
             newBalance = account[0].balance - int(amount) * int(limit)
