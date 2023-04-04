@@ -6,13 +6,13 @@ def generate_xml(num_orders):
     orders = []
     for i in range(num_orders):
         sym = 'SYM' if random.randint(0, 2) == 0 else 'SYX'
-        amount = random.randint(-200, 200)
-        limit = random.randint(150, 200)
+        amount = random.randint(-100, 100)
+        limit = random.randint(1, 100)
         order = ET.Element('order', sym=sym, amount=str(
             amount), limit=str(limit))
         orders.append(order)
 
-    transactions = ET.Element('transactions', id='11111')
+    transactions = ET.Element('transactions', id='8')
 
     transactions.extend(orders)
 

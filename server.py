@@ -9,16 +9,13 @@ from database import *
 
 @Pyro4.expose
 class StockMarket:
-    def readRequest(self, xml_string):
+    def readRequest(self, xml_string, cores):
         root = ET.fromstring(xml_string)
-        try:
-            response = handle(root)
+        # response = handle(root)
 
-        # with Pool(processes=cores) as p:
-        #     response = p.apply(handle, args=(root,))
-            # closeDb()
-        except Exception as e:
-            return e
+        with Pool() as p:
+            response = p.apply(handle, args=(root,))
+        closeDb()
         return response
 
 
