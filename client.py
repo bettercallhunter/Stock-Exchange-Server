@@ -8,7 +8,7 @@ from xmlGenerate import *
 uri = "PYRO:stockmarket@localhost:12345"
 stock_market = Pyro4.Proxy(uri)
 order1 = sys.argv
-with open('create.xml', 'r') as f:
+with open('transactions.xml', 'r') as f:
     input_string = f.read()
     xml_string = input_string.split('\n', 1)[1].strip()
 # xml_string=generate_xml(100)
