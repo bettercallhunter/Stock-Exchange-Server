@@ -8,8 +8,6 @@ from match import *
 
 
 def handle(root):
-    rootString = ET.tostring(root, encoding='utf8', method='xml').decode()
-    print(rootString)
     if root.tag == "create":
         responseRoot = handleCreate(root)
 
@@ -70,6 +68,7 @@ def handleCancel(Responseroot, child, account_id):
                 Responseroot, id, order.time, order.amount, executed_order.time, executed_order.amount, executed_order.limit, True)
         session.add(cancel)
         session.commit()
+        session.close()
 
 
 def handleQuery(Responseroot, root):
@@ -103,7 +102,7 @@ def handleOrder(Responseroot, child, account_id) -> None:
     # first, check if there is a match
     stmt = select(Account).where(Account.id == account_id)
     account = session.execute(stmt).fetchone()
-    
+
     if account is None:
         msg = "account does not exist"
         order_response(Responseroot, False, sym, amount, limit, msg)
@@ -134,34 +133,45 @@ def handleOrder(Responseroot, child, account_id) -> None:
         Transaction_id = getMaxId()+1
 
         new_order = Open(account_id=account_id, id=Transaction_id,
-                        sym=sym, amount=amount, limit=limit, time=datetime.now())
+                         sym=sym, amount=amount, limit=limit, time=datetime.now())
         order_response(Responseroot, True, sym, amount,
-                    limit, "ok", Transaction_id)
+                       limit, "ok", Transaction_id)
 
         session.add(new_order)
         session.commit()
-    print("order placed")
+        session.close()
+
     match_order(sym)
 
 
 def handleCreate(root):
     Responseroot = ET.Element('results')
     for child in root:
+        child_string = ET.tostring(child, encoding='utf8', method='xml')
+        print(child_string)
         if child.tag == 'account':
             id = child.attrib['id']
             balance = child.attrib['balance']
             position = child.attrib.get('position')
             hasAccount = session.query(Account).filter_by(id=id).first()
+
             if hasAccount is not None:
                 msg = "account already exists"
+
                 create_response(Responseroot, id, False, None, msg)
+
                 continue
             new_account = Account(id=id, balance=balance,
                                   position=position)
+            print("check check-1")
 
             session.add(new_account)
+
             session.commit()
+            session.close()
+
             create_response(Responseroot, id, True)
+
         elif child.tag == 'symbol':
             account = child.find('account').attrib['id']
             sym = child.attrib['sym']
@@ -185,7 +195,8 @@ def handleCreate(root):
                 flag_modified(selected, "position")
                 create_response(Responseroot, id, True, sym)
 
-    session.flush()
-    session.commit()
+            session.flush()
+            session.commit()
+            session.close()
 
     return Responseroot

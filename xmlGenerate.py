@@ -24,5 +24,5 @@ def generate_xml(num_orders):
     return
 
 
-generate_xml(50000)
+generate_xml(5000)
 # print(generate_xml(5))
