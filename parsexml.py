@@ -38,6 +38,8 @@ if __name__ == "__main__":
         input_string = f.read()
         xml_string = input_string.split('\n', 1)[1].strip()
         root = ET.fromstring(xml_string)
-        handle(root)
+        Responseroot = handle(root)
+        print(Responseroot)
+
 
 
