@@ -7,7 +7,7 @@ from response import *
 from match import *
 
 
-def handle(lock, root):
+def handle(root):
     rootString = ET.tostring(root, encoding='utf8', method='xml').decode()
     print(rootString)
     if root.tag == "create":
@@ -21,7 +21,7 @@ def handle(lock, root):
     return responseString
 
 
-def handleCancel(lock, Responseroot, child, account_id):
+def handleCancel(Responseroot, child, account_id):
     id = child.attrib['id']
     stmt = select(Open).where(Open.id == id).with_for_update()
     order = session.scalar(stmt)
