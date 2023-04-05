@@ -23,6 +23,5 @@ def generate_xml(num_orders):
         f.write('{}\n{}'.format(xml_length, xml_string))
     return
 
-
-generate_xml(5000)
+# generate_xml(5)
 # print(generate_xml(5))

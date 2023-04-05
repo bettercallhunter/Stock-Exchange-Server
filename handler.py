@@ -5,9 +5,12 @@ from sqlalchemy import delete
 from sqlalchemy.orm.attributes import flag_modified
 from response import *
 from match import *
+Session = sessionmaker(bind=engine)
+engine = create_engine("postgresql://postgres:0000@localhost:5432/stock")
 
 
 def handle(root):
+
     if root.tag == "create":
         responseRoot = handleCreate(root)
 
@@ -22,6 +25,7 @@ def handle(root):
 def handleCancel(Responseroot, child, account_id):
     id = child.attrib['id']
     stmt = select(Open).where(Open.id == id)
+    session = Session()
     order = session.scalar(stmt)
     if order is None:
         msg = "order does not exist"
@@ -37,6 +41,7 @@ def handleCancel(Responseroot, child, account_id):
     limit = order.limit
     # modify account balance and position
     stmt = select(Account).where(Account.id == account_id)
+    session = Session()
     account = session.scalar(stmt)
     with session.begin_nested():
         # if it is a buy order
@@ -48,6 +53,7 @@ def handleCancel(Responseroot, child, account_id):
             flag_modified(account, "position")
         # delete from open
         stmt = delete(Open).where(Open.id == id)
+        session = Session()
         session.execute(stmt)
         # add to cancel
         ######### WHAT IS THE TIME OF CANCEL?##########
@@ -66,13 +72,14 @@ def handleCancel(Responseroot, child, account_id):
 
             cancel_response_success(
                 Responseroot, id, order.time, order.amount, executed_order.time, executed_order.amount, executed_order.limit, True)
+        session = Session()
         session.add(cancel)
         session.commit()
-        session.close()
 
 
 def handleQuery(Responseroot, root):
     id = root.attrib['id']
+    session = Session()
     # open
     open = session.query(Open).filter_by(id=id).first()
     # canceled
@@ -101,6 +108,7 @@ def handleOrder(Responseroot, child, account_id) -> None:
     limit = child.attrib['limit']
     # first, check if there is a match
     stmt = select(Account).where(Account.id == account_id)
+    session = Session()
     account = session.execute(stmt).fetchone()
 
     if account is None:
@@ -137,6 +145,7 @@ def handleOrder(Responseroot, child, account_id) -> None:
         order_response(Responseroot, True, sym, amount,
                        limit, "ok", Transaction_id)
 
+        session = Session()
         session.add(new_order)
         session.commit()
         session.close()
@@ -164,7 +173,7 @@ def handleCreate(root):
             new_account = Account(id=id, balance=balance,
                                   position=position)
             print("check check-1")
-
+            session = Session()
             session.add(new_account)
 
             session.commit()
@@ -194,7 +203,7 @@ def handleCreate(root):
                     selected.position[sym]) + int(amount)
                 flag_modified(selected, "position")
                 create_response(Responseroot, id, True, sym)
-
+            session = Session()
             session.flush()
             session.commit()
             session.close()
