@@ -126,3 +126,8 @@ def getMaxId():
 Session = sessionmaker(bind=engine)
 Base.metadata.create_all(engine)
 session = Session()
+
+
+def closeDb():
+    session.close()
+    engine.dispose()
