@@ -5,7 +5,9 @@ from parsexml import *
 from handler import *
 from database import *
 from multiprocessing import Lock
-
+import cProfile
+import pstats
+import os
 
 def receiveStr(sfile):
     num = sfile.readline()
@@ -15,9 +17,11 @@ def receiveStr(sfile):
 
 
 def acceptCon(socket,lock):
+    count = 0
     while 1:
         conn, address = socket.accept()
         handleCon(conn,lock)
+        count += 1
         #conn.close()
 
 
@@ -61,23 +65,37 @@ class Server(object):
         
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         #self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.socket.bind((socket.gethostname(), self.port))
+        self.socket.bind(("localhost", self.port))
         self.socket.listen(5)
 
         print("Server started.\n")
         for i in range(self.num):
             process = multiprocessing.Process(
-                target=acceptCon, args=(self.socket, self.lock))
+                target=self.acceptCon_with_profile, args=(self.socket, self.lock))
             process.daemon = True
             process.start()
             self.processes.append(process)
 
         for process in self.processes:
             process.join()
+            
+    def acceptCon_with_profile(self, socket, lock):
+        pr = cProfile.Profile()
+        pr.enable()
+        acceptCon(socket, lock)
+        pr.disable()
+        pr.dump_stats(f'profile_worker_{os.getpid()}.prof')
+
 
 
 if __name__ == "__main__":
 
-    server = Server(12345,4)
+    server = Server(12345,2)
 
     server.start()
+
+    # merge the profiling reports and print the statistics
+    stats = pstats.Stats()
+    for i in range(server.num):
+        stats.add(f'profile_worker_{i+1}.prof')
+    stats.sort_stats('cumulative').print_stats(20)
