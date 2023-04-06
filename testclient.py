@@ -51,4 +51,4 @@ def get_time(times, nums,port):
 
    
 if __name__ == "__main__":
-    get_time(100,4,8000)
+    get_time(1000,4,8000)
