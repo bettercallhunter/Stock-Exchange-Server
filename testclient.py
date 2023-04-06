@@ -3,7 +3,9 @@ import time
 import xml.etree.ElementTree as ET
 from multiprocessing import Process
 
-processes = [] 
+processes = []
+
+
 def sendString(sfile, string):
     sfile.write(str(len(string)))
     sfile.write(string)
@@ -14,7 +16,8 @@ def receiveResponse(sfile):
     response = sfile.read(int(num))
     return ET.fromstring(response)
 
-def one_client(file,port):
+
+def one_client(file, port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect(("localhost", port))
     with open(file, 'r') as f:
@@ -25,30 +28,34 @@ def one_client(file,port):
     sock.sendall(input_string.encode())
     # response = receiveResponse(sfile)
     response = sock.recv(8192).decode()
-    #print(response)
+    # print(response)
     sock.close()
-    
-def run_all(file,times,port):
+
+
+def run_all(file, times, port):
     for i in range(times):
-        one_client(file,port)
-        if i==99:
+        one_client(file, port)
+        if i == 99:
             print(i)
-def get_time(times, nums,port):
+
+
+def get_time(times, nums, port):
     print("testing times for " + str(times*nums))
     start_time = time.time()
     for i in range(nums):
-        p = Process(target=run_all, args=('randomTransactions.xml', times,port))
+        p = Process(target=run_all, args=(
+            'randomTransactions.xml', times, port))
         p.start()
         processes.append(p)
 
     for p in processes:
         p.join()
-    
+
     stop_time = time.time()
     diff = stop_time - start_time
     print("Time elapsed: " + str(diff))
     print("Speed is {} quries/s".format(times * nums / diff))
 
-   
+
 if __name__ == "__main__":
-    get_time(1000,4,8000)
+    get_time(1000, 4, 12345)
