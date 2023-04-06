@@ -22,7 +22,8 @@ from sqlalchemy import DateTime
 from sqlalchemy_utils import database_exists, create_database
 
 from datetime import datetime
-engine = create_engine("postgresql://postgres:0000@localhost:5432/stock")
+engine = create_engine(
+    "postgresql://postgres:0000@localhost:5432/stock?sslmode=disable")
 if not database_exists(engine.url):
     create_database(engine.url)
 

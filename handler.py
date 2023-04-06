@@ -5,6 +5,8 @@ from sqlalchemy import delete
 from sqlalchemy.orm.attributes import flag_modified
 from response import *
 from match import *
+Session = sessionmaker(bind=engine)
+engine = create_engine("postgresql://postgres:0000@localhost:5432/stock")
 
 
 def handle(lock, root):
@@ -24,6 +26,7 @@ def handle(lock, root):
 def handleCancel(Responseroot, child, account_id):
     id = child.attrib['id']
     stmt = select(Open).where(Open.id == id)
+    session = Session()
     order = session.scalar(stmt)
     if order is None:
         msg = "order does not exist"
@@ -52,6 +55,7 @@ def handleCancel(Responseroot, child, account_id):
             flag_modified(account, "position")
         # delete from open
         stmt = delete(Open).where(Open.id == id)
+        session = Session()
         session.execute(stmt)
         # add to cancel
         ######### WHAT IS THE TIME OF CANCEL?##########
@@ -75,6 +79,7 @@ def handleCancel(Responseroot, child, account_id):
 
 def handleQuery(Responseroot, root):
     id = root.attrib['id']
+    session = Session()
     # open
     open = session.query(Open).filter_by(id=id).first()
     # canceled
@@ -148,6 +153,8 @@ def handleOrder(lock, Responseroot, child, account_id) -> None:
 def handleCreate(lock, root):
     Responseroot = ET.Element('results')
     for child in root:
+        child_string = ET.tostring(child, encoding='utf8', method='xml')
+        print(child_string)
         if child.tag == 'account':
             id = child.attrib['id']
             balance = child.attrib['balance']
@@ -164,6 +171,7 @@ def handleCreate(lock, root):
                 session.add(new_account)
                 session.commit()
             create_response(Responseroot, id, True)
+
         elif child.tag == 'symbol':
             account = child.find('account').attrib['id']
             sym = child.attrib['sym']
