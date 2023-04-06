@@ -109,7 +109,7 @@ def init_db():
     Base.metadata.create_all(engine)
 
 
-def getMaxId(lock):
+def getMaxId(session,lock):
     with lock:
         max_cancel_id = session.query(func.max(Cancel.id)).scalar()
         if max_cancel_id is None:
@@ -125,11 +125,10 @@ def getMaxId(lock):
     return maxId
 
 
-Session = sessionmaker(bind=engine)
+
 Base.metadata.create_all(engine)
-session = Session()
 
 
-def closeDb():
+def closeDb(session):
     session.close()
     engine.dispose()

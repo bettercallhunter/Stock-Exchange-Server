@@ -1,99 +1,79 @@
-# import Pyro4
-# from parsexml import *
-# from handler import *
-# import multiprocessing
-# from multiprocessing import Pool
-# import time
-# from database import *
-
-
-# @Pyro4.expose
-# class StockMarket:
-#     def readRequest(self, xml_string):
-#         root = ET.fromstring(xml_string)
-#         response = handle(root)
-
-#         closeDb()
-#         return response
-
-
-# if __name__ == "__main__":
-#     with Pool(4) as pool:
-
-#         daemon = Pyro4.Daemon(port=12345)
-
-#         uri = daemon.register(StockMarket, "stockmarket")
-#         print(f"Server URI: {uri}")
-#         ns = Pyro4.locateNS()
-#         ns.register("stockmarket", uri)
-#         for i in range(4):
-#             pool.apply_async(daemon.requestLoop)
-#         pool.close()
-#         pool.join()
-import Pyro4
+import multiprocessing
+import socket
 import xml.etree.ElementTree as ET
 from parsexml import *
 from handler import *
 from database import *
-import threading
-
-# Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
-
-
-@Pyro4.expose
-class StockMarket:
-    def readRequest(self, xml_string):
-        root = ET.fromstring(xml_string)
-        response = handle(root)
-        closeDb()
-        return response
+from multiprocessing import Lock
+import cProfile
+import pstats
+import os
+# Create the engine and sessionmaker instances
+engine = create_engine(
+    "postgresql://postgres:0000@localhost:5432/stock?sslmode=disable")
+Session = sessionmaker(bind=engine)
 
 
-class RequestHandlerThread(threading.Thread):
-    def __init__(self, daemon):
-        super().__init__()
-        self.daemon = daemon
+def receiveStr(sfile):
+    num = sfile.readline()
+    # if num != "":
+    return sfile.read(int(num))
+    raise Exception("received nothing")
 
-    def run(self):
-        self.daemon.requestLoop()
+
+def acceptCon(socket, lock):
+    session = Session()
+    handler = stockhandler(session)
+    while 1:
+        conn, address = socket.accept()
+        handleCon(conn, lock, handler)
+        conn.close()
+
+
+def handleCon(conn, lock, handler):
+
+    sfile = conn.makefile('rw', 1)
+    num = sfile.readline()
+    # if num != "":
+    #     return
+    msg = sfile.read(int(num))
+    # msg = receiveStr(sfile)
+    # print(msg)
+    root = ET.fromstring(msg)
+    response = handler.handle(lock, root)
+    # sfile.write(str(len(response)))
+    sfile.write(response)
+    print(response)
+    return
+
+
+class Server(object):
+    def __init__(self, port, num):
+        self.port = port
+        self.num = num
+        self.lock = Lock()
+        self.processes = []
+
+    def start(self):
+
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.socket.bind(("localhost", self.port))
+        self.socket.listen(5)
+
+        print("Server started.\n")
+        for i in range(self.num):
+            process = multiprocessing.Process(
+                target=acceptCon, args=(self.socket, self.lock))
+            process.daemon = True
+            process.start()
+            self.processes.append(process)
+
+        for process in self.processes:
+            process.join()
 
 
 if __name__ == "__main__":
-    # Create Pyro4 daemon
-    daemon = Pyro4.Daemon(port=12345)
-    uri = daemon.register(StockMarket, "stockmarket")
-    print(f"Server URI: {uri}")
 
-    # Start multiple request handler threads
-    handler_threads = []
-    for i in range(50):
-        handler_thread = RequestHandlerThread(daemon)
-        handler_thread.start()
-        handler_threads.append(handler_thread)
-
-    # Wait for all handler threads to finish
-    for handler_thread in handler_threads:
-        handler_thread.join()
-# from flask import Flask, request
-# import xml.etree.ElementTree as ET
-# from parsexml import *
-# from handler import *
-# from database import *
-
-# app = Flask(__name__)
-
-
-# @app.route('/readRequest', methods=['POST'])
-# def readRequest():
-#     xml_string = request.data.decode('utf-8')
-#     root = ET.fromstring(xml_string)
-#     response = handle(root)
-#     return response
-
-
-# def close():
-#     closeDb()
-
-
-# if __name__ == '__main__':
-#     app.run(port=12345, threaded=False, processes=4, debug=True)
+    server = Server(8000, 4)
+    server.start()
