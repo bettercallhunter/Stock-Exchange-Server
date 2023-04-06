@@ -14,14 +14,14 @@ def receiveStr(sfile):
     raise Exception("received nothing")
 
 
-def acceptCon(socket,lock):
+def acceptCon(socket, lock):
     while 1:
         conn, address = socket.accept()
-        handleCon(conn,lock)
-        #conn.close()
+        handleCon(conn, lock)
+        # conn.close()
 
 
-def handleCon(conn,lock):
+def handleCon(conn, lock):
 
     sfile = conn.makefile('rw', 1)
     num = sfile.readline()
@@ -58,10 +58,11 @@ class Server(object):
         self.processes = []
 
     def start(self):
-        
+
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        #self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.socket.bind((socket.gethostname(), self.port))
+        # self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # self.socket.bind((socket.gethostname(), self.port))
+        self.socket.bind(("localhost", self.port))
         self.socket.listen(5)
 
         print("Server started.\n")
@@ -78,6 +79,6 @@ class Server(object):
 
 if __name__ == "__main__":
 
-    server = Server(12345,4)
+    server = Server(12345, 1000)
 
     server.start()
