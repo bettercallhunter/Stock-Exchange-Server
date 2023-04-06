@@ -12,7 +12,7 @@ def generate_xml(num_orders):
             amount), limit=str(limit))
         orders.append(order)
 
-    transactions = ET.Element('transactions', id='8')
+    transactions = ET.Element('transactions', id='123456')
 
     transactions.extend(orders)
 
@@ -22,6 +22,7 @@ def generate_xml(num_orders):
     with open('randomTransactions.xml', "w") as f:
         f.write('{}\n{}'.format(xml_length, xml_string))
     return
+
 
 # generate_xml(5)
 # print(generate_xml(5))

@@ -17,7 +17,7 @@ def receiveResponse(sfile):
 if __name__ == "__main__":
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect(("localhost", 8000))
-    with open('transactions.xml', 'r') as f:
+    with open('randomTransactions.xml', 'r') as f:
         input_string = f.read()
         # xml_string = input_string.split('\n', 1)[1].strip()
     # sfile = sock.makefile('rw', 1)

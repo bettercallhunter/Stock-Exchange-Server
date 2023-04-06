@@ -13,19 +13,29 @@ def receiveStr(sfile):
     raise Exception("received nothing")
 
 
-def handleCon(socket):
+def acceptCon(socket):
     while 1:
-
         conn, address = socket.accept()
-        sfile = conn.makefile('rw', 1)
-        msg = receiveStr(sfile)
-        print(msg)
-        root = ET.fromstring(msg)
-        response = handle(root)
-        # sfile.write(str(len(response)))
-        sfile.write(response)
-        print(response)
-        return
+        handleCon(conn)
+        conn.close()
+
+
+def handleCon(conn):
+
+    sfile = conn.makefile('rw', 1)
+    num = sfile.readline()
+    # if num != "":
+    #     return
+    msg = sfile.read(int(num))
+    # msg = receiveStr(sfile)
+    # print(msg)
+    root = ET.fromstring(msg)
+    response = handle(root)
+    # sfile.write(str(len(response)))
+    sfile.write(response)
+    print(response)
+    return
+    # return
     #     data = connection.recv(1000000)
     #        if data == "":
     #             break
@@ -47,15 +57,16 @@ class Server(object):
     def start(self):
         processes = []
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.socket.bind((self.hostname, self.port))
 
-        self.socket.listen(5)
+        self.socket.listen()
 
         print("Server started.\n")
         for i in range(4):
             process = multiprocessing.Process(
-                target=handleCon, args=(self.socket, ))
-            process.daemon = False
+                target=acceptCon, args=(self.socket, ))
+            process.daemon = True
             process.start()
             processes.append(process)
 

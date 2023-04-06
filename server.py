@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
     # Start multiple request handler threads
     handler_threads = []
-    for i in range(1):
+    for i in range(50):
         handler_thread = RequestHandlerThread(daemon)
         handler_thread.start()
         handler_threads.append(handler_thread)
