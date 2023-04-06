@@ -2,6 +2,7 @@ import xml.etree.ElementTree as ET
 from database import *
 from handler import *
 from bs4 import BeautifulSoup
+from multiprocessing import Lock
 import multiprocessing
 # def reply(success,):
 #     results = ET.Element('results')
@@ -38,7 +39,8 @@ if __name__ == "__main__":
         input_string = f.read()
         xml_string = input_string.split('\n', 1)[1].strip()
         root = ET.fromstring(xml_string)
-        Responseroot = handle(root)
+        lock = Lock()
+        Responseroot = handle(lock, root)
         print(Responseroot)
 
 

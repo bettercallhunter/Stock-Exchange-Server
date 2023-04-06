@@ -7,14 +7,14 @@ from response import *
 from match import *
 
 
-def handle(root):
+def handle(lock, root):
     rootString = ET.tostring(root, encoding='utf8', method='xml').decode()
     print(rootString)
     if root.tag == "create":
-        responseRoot = handleCreate(root)
+        responseRoot = handleCreate(lock, root)
 
     elif root.tag == "transactions":
-        responseRoot = handleTransactions(root)
+        responseRoot = handleTransactions(lock, root)
     responseString = ET.tostring(
         responseRoot, encoding='utf8', method='xml').decode()
 
@@ -23,7 +23,7 @@ def handle(root):
 
 def handleCancel(Responseroot, child, account_id):
     id = child.attrib['id']
-    stmt = select(Open).where(Open.id == id).with_for_update()
+    stmt = select(Open).where(Open.id == id)
     order = session.scalar(stmt)
     if order is None:
         msg = "order does not exist"
@@ -37,10 +37,11 @@ def handleCancel(Responseroot, child, account_id):
 
     amount = order.amount
     limit = order.limit
+    time = order.time
     # modify account balance and position
     stmt = select(Account).where(Account.id == account_id).with_for_update()
     account = session.scalar(stmt)
-    
+
     with session.begin_nested():
         # if it is a buy order
         if int(amount) > 0:
@@ -64,13 +65,12 @@ def handleCancel(Responseroot, child, account_id):
     executed_order = session.scalar(stmt)
     if executed_order is None:
         cancel_response_success(
-            Responseroot, id, order.time, order.amount, order.time, order.amount, order.limit, False)
+            Responseroot, id, time, amount, time, amount, limit, False)
 
     else:
 
         cancel_response_success(
-            Responseroot, id, order.time, order.amount, executed_order.time, executed_order.amount, executed_order.limit, True)
-        
+            Responseroot, id, time, amount, executed_order.time, executed_order.amount, executed_order.limit, True)
 
 
 def handleQuery(Responseroot, root):
@@ -85,11 +85,11 @@ def handleQuery(Responseroot, root):
     query_response(Responseroot, id, open, canceled, executed)
 
 
-def handleTransactions(root):
+def handleTransactions(lock, root):
     Responseroot = ET.Element('results')
     for child in root:
         if child.tag == 'order':
-            handleOrder(Responseroot, child, root.attrib['id'])
+            handleOrder(lock, Responseroot, child, root.attrib['id'])
         elif child.tag == 'cancel':
             handleCancel(Responseroot, child, root.attrib['id'])
         elif child.tag == 'query':
@@ -102,45 +102,45 @@ def handleOrder(lock, Responseroot, child, account_id) -> None:
     amount = child.attrib['amount']
     limit = child.attrib['limit']
     # first, check if there is a match
-    stmt = select(Account).where(Account.id == account_id)
+    stmt = select(Account).where(Account.id == account_id).with_for_update()
     account = session.execute(stmt).fetchone()
-    
+
     if account is None:
         msg = "account does not exist"
         order_response(Responseroot, False, sym, amount, limit, msg)
         return
-    with lock:
-        with session.begin_nested():
-            # if it is a buy order
-            if int(amount) > 0:
-                newBalance = account[0].balance - int(amount) * int(limit)
-                if newBalance < 0:
-                    msg = "insufficient funds"
-                    order_response(Responseroot, False, sym, amount, limit, msg)
-                    return
 
-                account[0].balance = newBalance
+    with session.begin_nested():
+        # if it is a buy order
+        if int(amount) > 0:
+            newBalance = account[0].balance - int(amount) * int(limit)
+            if newBalance < 0:
+                msg = "insufficient funds"
+                order_response(Responseroot, False, sym, amount, limit, msg)
+                return
 
-            # if it is a sell order
-            elif int(amount) < 0:
-                # check if have enough shares
-                if account[0].position is None or sym not in account[0].position or int(account[0].position[sym]) < abs(int(amount)):
-                    msg = "insufficient shares"
-                    order_response(Responseroot, False, sym, amount, limit, msg)
-                    return
-                newAmount = int(account[0].position[sym]) - abs(int(amount))
-                # update position
-                account[0].position[sym] = newAmount
-                flag_modified(account[0], "position")
-            # add order to database
-            Transaction_id = getMaxId()+1
+            account[0].balance = newBalance
 
-            new_order = Open(account_id=account_id, id=Transaction_id,
-                            sym=sym, amount=amount, limit=limit, time=datetime.now())
-            session.add(new_order)
-            session.commit()
+        # if it is a sell order
+        elif int(amount) < 0:
+            # check if have enough shares
+            if account[0].position is None or sym not in account[0].position or int(account[0].position[sym]) < abs(int(amount)):
+                msg = "insufficient shares"
+                order_response(Responseroot, False, sym, amount, limit, msg)
+                return
+            newAmount = int(account[0].position[sym]) - abs(int(amount))
+            # update position
+            account[0].position[sym] = newAmount
+            flag_modified(account[0], "position")
+        # add order to database
+        Transaction_id = getMaxId(lock)+1
+
+        new_order = Open(account_id=account_id, id=Transaction_id,
+                         sym=sym, amount=amount, limit=limit, time=datetime.now())
+        session.add(new_order)
+        session.commit()
     order_response(Responseroot, True, sym, amount,
-                limit, "ok", Transaction_id)
+                   limit, "ok", Transaction_id)
     print("order placed")
     match_order(sym)
 
@@ -159,7 +159,7 @@ def handleCreate(lock, root):
                     create_response(Responseroot, id, False, None, msg)
                     continue
                 new_account = Account(id=id, balance=balance,
-                                    position=position)
+                                      position=position)
 
                 session.add(new_account)
                 session.commit()
@@ -168,27 +168,28 @@ def handleCreate(lock, root):
             account = child.find('account').attrib['id']
             sym = child.attrib['sym']
             amount = child.find('account').text
-            with lock:
-                selected = session.query(Account).filter_by(id=account).first()
-                if selected is None:
-                    create_response(Responseroot, id, False, sym)
-                    print("account does not exist")
-                    continue
-                if selected.position is None:
-                    create_response(Responseroot, id, True, sym)
-                    selected.position = {sym: amount}
-                    flag_modified(selected, "position")
-                elif sym not in selected.position:
-                    create_response(Responseroot, id, True, sym)
-                    selected.position[sym] = amount
-                    flag_modified(selected, "position")
-                else:
-                    selected.position[sym] = int(
-                        selected.position[sym]) + int(amount)
-                    flag_modified(selected, "position")
-                    create_response(Responseroot, id, True, sym)
 
-                session.flush()
-                session.commit()
+            selected = session.query(Account).filter_by(
+                id=account).with_for_update().first()
+            if selected is None:
+                create_response(Responseroot, id, False, sym)
+                print("account does not exist")
+                continue
+            if selected.position is None:
+                create_response(Responseroot, id, True, sym)
+                selected.position = {sym: amount}
+                flag_modified(selected, "position")
+            elif sym not in selected.position:
+                create_response(Responseroot, id, True, sym)
+                selected.position[sym] = amount
+                flag_modified(selected, "position")
+            else:
+                selected.position[sym] = int(
+                    selected.position[sym]) + int(amount)
+                flag_modified(selected, "position")
+                create_response(Responseroot, id, True, sym)
+
+            # session.flush()
+            session.commit()
 
     return Responseroot

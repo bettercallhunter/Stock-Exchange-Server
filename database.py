@@ -108,17 +108,18 @@ def init_db():
     Base.metadata.create_all(engine)
 
 
-def getMaxId():
-    max_cancel_id = session.query(func.max(Cancel.id)).scalar()
-    if max_cancel_id is None:
-        max_cancel_id = 0
-    max_executed_id = session.query(func.max(Executed.id)).scalar()
-    if max_executed_id is None:
-        max_executed_id = 0
-    max_open_id = session.query(func.max(Open.id)).scalar()
-    if max_open_id is None:
-        max_open_id = 0
-    maxId = max(max_cancel_id, max_executed_id, max_open_id)
+def getMaxId(lock):
+    with lock:
+        max_cancel_id = session.query(func.max(Cancel.id)).scalar()
+        if max_cancel_id is None:
+            max_cancel_id = 0
+        max_executed_id = session.query(func.max(Executed.id)).scalar()
+        if max_executed_id is None:
+            max_executed_id = 0
+        max_open_id = session.query(func.max(Open.id)).scalar()
+        if max_open_id is None:
+            max_open_id = 0
+        maxId = max(max_cancel_id, max_executed_id, max_open_id)
 
     return maxId
 
