@@ -10,8 +10,10 @@ def get_max_buyer(session, sym):
 
 
 def get_min_seller(session, sym):
+    print("abc")
     seller = session.query(Open).filter(
-        Open.amount < 0, Open.sym == sym).with_for_update().order_by(Open.limit, Open.time).first()
+        Open.amount < 0, Open.sym == sym).order_by(Open.limit, Open.time).first()
+    print("def")
     return seller
 
 

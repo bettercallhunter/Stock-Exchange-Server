@@ -1,3 +1,7 @@
-294
+222
 <?xml version='1.0' encoding='UTF-8'?>
-<transactions id="123456"><order sym="SYM" amount="-11" limit="65" /><order sym="SYX" amount="-56" limit="84" /><order sym="SYM" amount="-39" limit="45" /><order sym="SYX" amount="10" limit="55" /><order sym="SYM" amount="-45" limit="90" /></transactions>
+<transactions id="654321">
+    <order sym="SYB" amount="-40" limit="5" />
+    <order sym="SYA" amount="50" limit="10" />
+    <order sym="SYA" amount="5" limit="100" />
+</transactions>

@@ -53,6 +53,7 @@ class Server(object):
         self.num = num
         self.lock = Lock()
         self.processes = []
+        init_db()
 
     def start(self):
 
@@ -75,5 +76,5 @@ class Server(object):
 
 if __name__ == "__main__":
 
-    server = Server(3000, 4)
+    server = Server(8000, 4)
     server.start()
