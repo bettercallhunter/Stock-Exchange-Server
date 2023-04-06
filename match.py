@@ -3,19 +3,6 @@ from sqlalchemy import desc
 from sqlalchemy.orm.attributes import flag_modified
 
 
-def get_max_buyer(session, sym):
-    buyer = session.query(Open).filter(Open.amount > 0, Open.sym == sym).with_for_update().order_by(
-        desc(Open.limit), Open.time).first()
-    return buyer
-
-
-def get_min_seller(session, sym):
-    print("abc")
-    seller = session.query(Open).filter(
-        Open.amount < 0, Open.sym == sym).order_by(Open.limit, Open.time).first()
-    print("def")
-    return seller
-
 
 def update_account(session, buyer, seller, sym, amount, price, buyerPrice):
     buyerAccount = session.query(Account).filter(
@@ -37,20 +24,25 @@ def update_account(session, buyer, seller, sym, amount, price, buyerPrice):
     
 
 
-def execute_order(session, buyer, seller):
-    if buyer.limit < seller.limit:
-        session.commit()
-        return False
-    now = datetime.now()
-    price = buyer.limit
-    if buyer.time > seller.time:
-        price = seller.limit
-    amount = min(buyer.amount, abs(seller.amount))
-    executed_buy = Executed(transId=buyer.id, sym=buyer.sym, amount=amount,
-                            limit=price, account_id=buyer.account_id, time=now)
-    executed_sell = Executed(transId=seller.id, sym=seller.sym, amount=amount,
-                             limit=price, account_id=seller.account_id, time=now)
-    with session.begin_nested():
+def execute_order(session):
+    with self.session.begin_nested():
+        buyer = session.query(Open).filter(Open.amount > 0, Open.sym == sym).with_for_update().order_by(
+            desc(Open.limit), Open.time).first()
+        seller = session.query(Open).filter(
+            Open.amount < 0, Open.sym == sym).with_for_update().order_by(Open.limit, Open.time).first()
+        if buyer is None or seller is None or buyer.limit < seller.limit:
+            session.commit()
+            return False
+        now = datetime.now()
+        price = buyer.limit
+        if buyer.time > seller.time:
+            price = seller.limit
+        amount = min(buyer.amount, abs(seller.amount))
+        executed_buy = Executed(transId=buyer.id, sym=buyer.sym, amount=amount,
+                                limit=price, account_id=buyer.account_id, time=now)
+        executed_sell = Executed(transId=seller.id, sym=seller.sym, amount=amount,
+                                limit=price, account_id=seller.account_id, time=now)
+        
         session.add(executed_buy)
         session.add(executed_sell)
         buyer.amount -= amount
@@ -65,8 +57,5 @@ def execute_order(session, buyer, seller):
 
 
 def match_order(session, sym):
-    buyer = get_max_buyer(session, sym)
-    seller = get_min_seller(session, sym)
-    while buyer is not None and seller is not None and execute_order(session, buyer, seller):
-        buyer = get_max_buyer(session, sym)
-        seller = get_min_seller(session, sym)
+    while execute_order(session):
+        pass
