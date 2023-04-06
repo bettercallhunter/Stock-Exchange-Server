@@ -3,19 +3,19 @@ from sqlalchemy import desc
 from sqlalchemy.orm.attributes import flag_modified
 
 
-def get_max_buyer(sym):
+def get_max_buyer(session, sym):
     buyer = session.query(Open).filter(Open.amount > 0, Open.sym == sym).with_for_update().order_by(
         desc(Open.limit), Open.time).first()
     return buyer
 
 
-def get_min_seller(sym):
+def get_min_seller(session, sym):
     seller = session.query(Open).filter(
         Open.amount < 0, Open.sym == sym).with_for_update().order_by(Open.limit, Open.time).first()
     return seller
 
 
-def update_account(buyer, seller, sym, amount, price, buyerPrice):
+def update_account(session, buyer, seller, sym, amount, price, buyerPrice):
     buyerAccount = session.query(Account).filter(
         Account.id == buyer.account_id).with_for_update().first()
     sellerAccount = session.query(Account).filter(
@@ -32,9 +32,10 @@ def update_account(buyer, seller, sym, amount, price, buyerPrice):
 
     sellerAccount.balance += amount*price
     buyerAccount.balance += amount * (buyerPrice - price)
+    
 
 
-def execute_order(buyer, seller):
+def execute_order(session, buyer, seller):
     if buyer.limit < seller.limit:
         session.commit()
         return False
@@ -56,14 +57,14 @@ def execute_order(buyer, seller):
             session.delete(buyer)
         if seller.amount == 0:
             session.delete(seller)
-        update_account(buyer, seller, buyer.sym, amount, price, buyer.limit)
+        update_account(session, buyer, seller, buyer.sym, amount, price, buyer.limit)
         session.commit()
     return True
 
 
-def match_order(sym):
-    buyer = get_max_buyer(sym)
-    seller = get_min_seller(sym)
-    while buyer is not None and seller is not None and execute_order(buyer, seller):
-        buyer = get_max_buyer(sym)
-        seller = get_min_seller(sym)
+def match_order(session, sym):
+    buyer = get_max_buyer(session, sym)
+    seller = get_min_seller(session, sym)
+    while buyer is not None and seller is not None and execute_order(session, buyer, seller):
+        buyer = get_max_buyer(session, sym)
+        seller = get_min_seller(session, sym)
