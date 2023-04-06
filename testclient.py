@@ -2,8 +2,8 @@ import socket
 import time
 import xml.etree.ElementTree as ET
 from multiprocessing import Process
+import statistics
 
-processes = [] 
 def sendString(sfile, string):
     sfile.write(str(len(string)))
     sfile.write(string)
@@ -31,10 +31,10 @@ def one_client(file,port):
 def run_all(file,times,port):
     for i in range(times):
         one_client(file,port)
-        if i==99:
-            print(i)
 def get_time(times, nums,port):
-    print("testing times for " + str(times*nums))
+    processes = [] 
+    # print("total core number: " + str(1))
+    print("total request number: " + str(times*nums))
     start_time = time.time()
     for i in range(nums):
         p = Process(target=run_all, args=('randomTransactions.xml', times,port))
@@ -46,9 +46,21 @@ def get_time(times, nums,port):
     
     stop_time = time.time()
     diff = stop_time - start_time
-    print("Time elapsed: " + str(diff))
-    print("Speed is {} quries/s".format(times * nums / diff))
+    throughput = times * nums / diff
+    print("total running time: " + str(diff) + "s")
+    print("throughput is {} request/s".format(throughput))
+    return throughput
 
    
 if __name__ == "__main__":
-    get_time(1000,4,8000)
+    print("total core number: " + str(4))
+    results = []
+    for i in range(10):
+        throughput = get_time(1000,4,8000)
+        print()
+        results.append(throughput)
+    avg_time = statistics.mean(results)
+    std_dev = statistics.stdev(results)
+    print("total core number: " + str(4))
+    print("average throughput by running 10 times is {} request/s".format(avg_time))
+    print("Standard deviation:", std_dev)

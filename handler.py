@@ -41,12 +41,12 @@ class stockhandler:
         amount = order.amount
         limit = order.limit
         time = order.time
-        # modify account balance and position
-        stmt = select(Account).where(
-            Account.id == account_id).with_for_update()
-        account = self.session.scalar(stmt)
+        
 
         with self.session.begin_nested():
+            # modify account balance and position
+            stmt = select(Account).where(Account.id == account_id).with_for_update()
+            account = self.session.scalar(stmt)
             # if it is a buy order
             if int(amount) > 0:
                 account.balance += amount * limit
@@ -103,17 +103,18 @@ class stockhandler:
         sym = child.attrib['sym']
         amount = child.attrib['amount']
         limit = child.attrib['limit']
-        # first, check if there is a match
-        stmt = select(Account).where(
-            Account.id == account_id).with_for_update()
-        account = self.session.execute(stmt).fetchone()
-
-        if account is None:
-            msg = "account does not exist"
-            order_response(Responseroot, False, sym, amount, limit, msg)
-            return
+        
 
         with self.session.begin_nested():
+            # first, check if there is a match
+            stmt = select(Account).where(
+                Account.id == account_id).with_for_update()
+            account = self.session.execute(stmt).fetchone()
+
+            if account is None:
+                msg = "account does not exist"
+                order_response(Responseroot, False, sym, amount, limit, msg)
+                return
             # if it is a buy order
             if int(amount) > 0:
                 newBalance = account[0].balance - int(amount) * int(limit)
@@ -176,28 +177,28 @@ class stockhandler:
                 account = child.find('account').attrib['id']
                 sym = child.attrib['sym']
                 amount = child.find('account').text
+                with self.session.begin_nested():
+                    selected = self.session.query(Account).filter_by(
+                        id=account).with_for_update().first()
+                    if selected is None:
+                        create_response(Responseroot, id, False, sym)
+                        print("account does not exist")
+                        continue
+                    if selected.position is None:
+                        create_response(Responseroot, id, True, sym)
+                        selected.position = {sym: amount}
+                        flag_modified(selected, "position")
+                    elif sym not in selected.position:
+                        create_response(Responseroot, id, True, sym)
+                        selected.position[sym] = amount
+                        flag_modified(selected, "position")
+                    else:
+                        selected.position[sym] = int(
+                            selected.position[sym]) + int(amount)
+                        flag_modified(selected, "position")
+                        create_response(Responseroot, id, True, sym)
 
-                selected = self.session.query(Account).filter_by(
-                    id=account).with_for_update().first()
-                if selected is None:
-                    create_response(Responseroot, id, False, sym)
-                    print("account does not exist")
-                    continue
-                if selected.position is None:
-                    create_response(Responseroot, id, True, sym)
-                    selected.position = {sym: amount}
-                    flag_modified(selected, "position")
-                elif sym not in selected.position:
-                    create_response(Responseroot, id, True, sym)
-                    selected.position[sym] = amount
-                    flag_modified(selected, "position")
-                else:
-                    selected.position[sym] = int(
-                        selected.position[sym]) + int(amount)
-                    flag_modified(selected, "position")
-                    create_response(Responseroot, id, True, sym)
-
-                # self.session.flush()
-                self.session.commit()
+                    # self.session.flush()
+                    self.session.commit()
 
         return Responseroot
