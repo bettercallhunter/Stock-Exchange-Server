@@ -72,10 +72,10 @@ def order_response(root, success, sym, amount, limit, msg, id=-1):
 def cancel_response_success(root,id, openTime, openShare, executedTime, executedShare, price, hasExecuted=False):
     canceledElement = ET.SubElement(root, 'canceled', {'id': str(id)})
     cancalled = ET.SubElement(canceledElement, 'canceled', {
-                              'shares': str(openShare), 'time': str(openTime)})
+                              'shares': str(openShare), 'time': str(int(openTime.timestamp()))})
     if hasExecuted:
         executed = ET.SubElement(canceledElement, 'executed', {'shares': str(
-            executedShare), 'price': str(price), 'time': str(executedTime)})
+            executedShare), 'price': str(price), 'time':  str(int(executedTime.timestamp()))})
     return ET
 
 

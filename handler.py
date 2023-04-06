@@ -68,14 +68,14 @@ class stockhandler:
             self.session.commit()
         stmt = select(Executed).where(Executed.transId == id)
         executed_order = self.session.scalar(stmt)
+
         if executed_order is None:
             cancel_response_success(
                 Responseroot, id, time, amount, time, amount, limit, False)
 
         else:
-
-            cancel_response_success(
-                Responseroot, id, time, amount, executed_order.time, executed_order.amount, executed_order.limit, True)
+            for order in self.session.scalars(stmt):
+                cancel_response_success(Responseroot, id, time, amount, order.time, order.amount, order.limit, True)
 
     def handleQuery(self, Responseroot, root):
         id = root.attrib['id']

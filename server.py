@@ -1,7 +1,6 @@
 import multiprocessing
 import socket
 import xml.etree.ElementTree as ET
-from parsexml import *
 from handler import *
 from database import *
 from multiprocessing import Lock
@@ -16,9 +15,8 @@ Session = sessionmaker(bind=engine)
 
 def receiveStr(sfile):
     num = sfile.readline()
-    # if num != "":
     return sfile.read(int(num))
-    raise Exception("received nothing")
+    
 
 
 def acceptCon(socket, lock):
@@ -34,10 +32,8 @@ def handleCon(conn, lock, handler):
 
     sfile = conn.makefile('rw', 1)
     num = sfile.readline()
-    # if num != "":
-    #     return
+ 
     msg = sfile.read(int(num))
-    # msg = receiveStr(sfile)
     # print(msg)
     root = ET.fromstring(msg)
     response = handler.handle(lock, root)

@@ -4,15 +4,6 @@ import xml.etree.ElementTree as ET
 from multiprocessing import Process
 import statistics
 
-def sendString(sfile, string):
-    sfile.write(str(len(string)))
-    sfile.write(string)
-
-
-def receiveResponse(sfile):
-    num = sfile.readline()
-    response = sfile.read(int(num))
-    return ET.fromstring(response)
 
 
 def one_client(file, port):
@@ -20,11 +11,8 @@ def one_client(file, port):
     sock.connect(("localhost", port))
     with open(file, 'r') as f:
         input_string = f.read()
-        # xml_string = input_string.split('\n', 1)[1].strip()
-    # sfile = sock.makefile('rw', 1)
-    # sendString(sfile, input_string)
+
     sock.sendall(input_string.encode())
-    # response = receiveResponse(sfile)
     response = sock.recv(8192).decode()
     # print(response)
     sock.close()

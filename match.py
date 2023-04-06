@@ -24,8 +24,8 @@ def update_account(session, buyer, seller, sym, amount, price, buyerPrice):
     
 
 
-def execute_order(session):
-    with self.session.begin_nested():
+def execute_order(session,sym):
+    with session.begin_nested():
         buyer = session.query(Open).filter(Open.amount > 0, Open.sym == sym).with_for_update().order_by(
             desc(Open.limit), Open.time).first()
         seller = session.query(Open).filter(
@@ -57,5 +57,5 @@ def execute_order(session):
 
 
 def match_order(session, sym):
-    while execute_order(session):
+    while execute_order(session,sym):
         pass
