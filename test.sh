@@ -1,13 +1,6 @@
 #!/bin/bash
-
-start=$(date +%s.%N)
-
-for i in {1..1000}
+while [ "1"=="1" ]
 do
-  python3 testclient.py
+    taskset -c 0,1 python3 server.py
+    sleep 1
 done
-
-end=$(date +%s.%N)
-runtime=$(echo "$end - $start" | bc)
-
-echo "Total time to run testclient.py 1000 times: $runtime seconds"

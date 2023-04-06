@@ -90,7 +90,7 @@ class Server(object):
 
 if __name__ == "__main__":
 
-    server = Server(12345,2)
+    server = Server(8000,2)
 
     server.start()
 
