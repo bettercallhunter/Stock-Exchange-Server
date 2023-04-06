@@ -4,22 +4,22 @@ from sqlalchemy.orm.attributes import flag_modified
 
 
 def get_max_buyer(sym):
-    buyer = session.query(Open).filter(Open.amount > 0, Open.sym == sym).order_by(
+    buyer = session.query(Open).filter(Open.amount > 0, Open.sym == sym).with_for_update().order_by(
         desc(Open.limit), Open.time).first()
     return buyer
 
 
 def get_min_seller(sym):
     seller = session.query(Open).filter(
-        Open.amount < 0, Open.sym == sym).order_by(Open.limit, Open.time).first()
+        Open.amount < 0, Open.sym == sym).with_for_update().order_by(Open.limit, Open.time).first()
     return seller
 
 
 def update_account(buyer, seller, sym, amount, price, buyerPrice):
     buyerAccount = session.query(Account).filter(
-        Account.id == buyer.account_id).first()
+        Account.id == buyer.account_id).with_for_update().first()
     sellerAccount = session.query(Account).filter(
-        Account.id == seller.account_id).first()
+        Account.id == seller.account_id).with_for_update().first()
 
     if buyerAccount.position is None:
         buyerAccount.position = {sym: amount}
@@ -36,6 +36,7 @@ def update_account(buyer, seller, sym, amount, price, buyerPrice):
 
 def execute_order(buyer, seller):
     if buyer.limit < seller.limit:
+        session.commit()
         return False
     now = datetime.now()
     price = buyer.limit

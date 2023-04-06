@@ -9,13 +9,14 @@ Session = sessionmaker(bind=engine)
 engine = create_engine("postgresql://postgres:0000@localhost:5432/stock")
 
 
-def handle(root):
-
+def handle(lock, root):
+    rootString = ET.tostring(root, encoding='utf8', method='xml').decode()
+    print(rootString)
     if root.tag == "create":
-        responseRoot = handleCreate(root)
+        responseRoot = handleCreate(lock, root)
 
     elif root.tag == "transactions":
-        responseRoot = handleTransactions(root)
+        responseRoot = handleTransactions(lock, root)
     responseString = ET.tostring(
         responseRoot, encoding='utf8', method='xml').decode()
 
@@ -39,10 +40,11 @@ def handleCancel(Responseroot, child, account_id):
 
     amount = order.amount
     limit = order.limit
+    time = order.time
     # modify account balance and position
-    stmt = select(Account).where(Account.id == account_id)
-    session = Session()
+    stmt = select(Account).where(Account.id == account_id).with_for_update()
     account = session.scalar(stmt)
+
     with session.begin_nested():
         # if it is a buy order
         if int(amount) > 0:
@@ -61,20 +63,18 @@ def handleCancel(Responseroot, child, account_id):
                         limit=order.limit, account_id=account_id, time=datetime.now())
 
         # find order in executed
-
-        stmt = select(Executed).where(Executed.transId == id)
-        executed_order = session.scalar(stmt)
-        if executed_order is None:
-            cancel_response_success(
-                Responseroot, id, order.time, order.amount, order.time, order.amount, order.limit, False)
-
-        else:
-
-            cancel_response_success(
-                Responseroot, id, order.time, order.amount, executed_order.time, executed_order.amount, executed_order.limit, True)
-        session = Session()
         session.add(cancel)
         session.commit()
+    stmt = select(Executed).where(Executed.transId == id)
+    executed_order = session.scalar(stmt)
+    if executed_order is None:
+        cancel_response_success(
+            Responseroot, id, time, amount, time, amount, limit, False)
+
+    else:
+
+        cancel_response_success(
+            Responseroot, id, time, amount, executed_order.time, executed_order.amount, executed_order.limit, True)
 
 
 def handleQuery(Responseroot, root):
@@ -90,11 +90,11 @@ def handleQuery(Responseroot, root):
     query_response(Responseroot, id, open, canceled, executed)
 
 
-def handleTransactions(root):
+def handleTransactions(lock, root):
     Responseroot = ET.Element('results')
     for child in root:
         if child.tag == 'order':
-            handleOrder(Responseroot, child, root.attrib['id'])
+            handleOrder(lock, Responseroot, child, root.attrib['id'])
         elif child.tag == 'cancel':
             handleCancel(Responseroot, child, root.attrib['id'])
         elif child.tag == 'query':
@@ -102,19 +102,19 @@ def handleTransactions(root):
     return Responseroot
 
 
-def handleOrder(Responseroot, child, account_id) -> None:
+def handleOrder(lock, Responseroot, child, account_id) -> None:
     sym = child.attrib['sym']
     amount = child.attrib['amount']
     limit = child.attrib['limit']
     # first, check if there is a match
-    stmt = select(Account).where(Account.id == account_id)
-    session = Session()
+    stmt = select(Account).where(Account.id == account_id).with_for_update()
     account = session.execute(stmt).fetchone()
 
     if account is None:
         msg = "account does not exist"
         order_response(Responseroot, False, sym, amount, limit, msg)
         return
+
     with session.begin_nested():
         # if it is a buy order
         if int(amount) > 0:
@@ -138,22 +138,19 @@ def handleOrder(Responseroot, child, account_id) -> None:
             account[0].position[sym] = newAmount
             flag_modified(account[0], "position")
         # add order to database
-        Transaction_id = getMaxId()+1
+        Transaction_id = getMaxId(lock)+1
 
         new_order = Open(account_id=account_id, id=Transaction_id,
                          sym=sym, amount=amount, limit=limit, time=datetime.now())
-        order_response(Responseroot, True, sym, amount,
-                       limit, "ok", Transaction_id)
-
-        session = Session()
         session.add(new_order)
         session.commit()
-        session.close()
-
+    order_response(Responseroot, True, sym, amount,
+                   limit, "ok", Transaction_id)
+    print("order placed")
     match_order(sym)
 
 
-def handleCreate(root):
+def handleCreate(lock, root):
     Responseroot = ET.Element('results')
     for child in root:
         child_string = ET.tostring(child, encoding='utf8', method='xml')
@@ -162,30 +159,26 @@ def handleCreate(root):
             id = child.attrib['id']
             balance = child.attrib['balance']
             position = child.attrib.get('position')
-            hasAccount = session.query(Account).filter_by(id=id).first()
+            with lock:
+                hasAccount = session.query(Account).filter_by(id=id).first()
+                if hasAccount is not None:
+                    msg = "account already exists"
+                    create_response(Responseroot, id, False, None, msg)
+                    continue
+                new_account = Account(id=id, balance=balance,
+                                      position=position)
 
-            if hasAccount is not None:
-                msg = "account already exists"
-
-                create_response(Responseroot, id, False, None, msg)
-
-                continue
-            new_account = Account(id=id, balance=balance,
-                                  position=position)
-            print("check check-1")
-            session = Session()
-            session.add(new_account)
-
-            session.commit()
-            session.close()
-
+                session.add(new_account)
+                session.commit()
             create_response(Responseroot, id, True)
 
         elif child.tag == 'symbol':
             account = child.find('account').attrib['id']
             sym = child.attrib['sym']
             amount = child.find('account').text
-            selected = session.query(Account).filter_by(id=account).first()
+
+            selected = session.query(Account).filter_by(
+                id=account).with_for_update().first()
             if selected is None:
                 create_response(Responseroot, id, False, sym)
                 print("account does not exist")
@@ -203,9 +196,8 @@ def handleCreate(root):
                     selected.position[sym]) + int(amount)
                 flag_modified(selected, "position")
                 create_response(Responseroot, id, True, sym)
-            session = Session()
-            session.flush()
+
+            # session.flush()
             session.commit()
-            session.close()
 
     return Responseroot

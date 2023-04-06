@@ -1,6 +1,7 @@
 104
 <?xml version="1.0" encoding="UTF-8"?>
-<transactions id="123456"> 
-  <cancel id="11"/>
+
+<transactions id="11"> 
+  <order sym="AEF" amount="5" limit="300"/>
 </transactions>
 
