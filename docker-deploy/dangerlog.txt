@@ -1,0 +1,8 @@
+1. If the xml received is not valid, the server will move on with other clients, and it will not be blocked
+2. If the account does not have enough balance and want to make a purchase, server will return a error message
+3. If the account does not exist, server will return a error message
+4. If the account does not have enought share, server will return a error message
+5. We add locks everytime when we want to write into the database, for example, when we handle create and order
+6. When the xml file received by the server is invalid (either the root is not create or transaction, or it's not a valid xml or its root is transaction, but the type is neither order, query or cancel)
+7. When the client want to cancel or query the order that does not belong to the person who want to access, or the order does not exist, we return error message
+8. We use .with_for_update() when we query, but this function caused program to block, so we ??????????????????
