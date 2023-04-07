@@ -1,0 +1,3 @@
+sudo service postgresql restart
+sudo PGPASSWORD=0000 psql -h localhost -d stock -U postgres -p 5432 -a -q
+python3 src/stockserver/server.py

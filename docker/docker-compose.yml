@@ -1,0 +1,32 @@
+version: '2'
+
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=0000
+    volumes:
+      - ./db.sql:/docker-entrypoint-initdb.d/db.sql
+      - ./init_sql:/docker-entrypoint-initdb.d
+      - data-volume:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    ports:
+      - "5432"
+
+  stockengine:
+    build: ./src
+    restart: always
+    user: root
+    command: "/newRoot/runserver.sh"
+    ports:
+      - "12345:12345"
+    depends_on: 
+      - db
+    
+
+volumes:
+  data-volume:
