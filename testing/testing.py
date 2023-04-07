@@ -206,6 +206,9 @@ def check5(response):
     assert cancal_id_list ==['1']
     print("passed test5")
 
+
+
+
 def run_tests(port):      
     test1(port)
     check1()
@@ -219,6 +222,6 @@ def run_tests(port):
     check5(response)
 
 if __name__ == "__main__":
-    run_tests(8000)
+    run_tests(12345)
 
 # assert

@@ -1,0 +1,11 @@
+233
+<?xml version='1.0' encoding='UTF-8'?>
+<transactions id="123456">
+    <query id ="1"/>
+    <cancel id ="1"/>
+    <query id ="1"/>
+    <query id ="4"/>
+    <cancel id ="5"/>
+    <query id ="4"/>
+    <cancel id ="888"/>
+</transactions>
