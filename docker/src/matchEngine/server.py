@@ -54,7 +54,7 @@ class Server(object):
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.socket.bind(("localhost", self.port))
+        self.socket.bind(("stockengine", self.port))
         self.socket.listen(5)
 
         print("Server started.\n")
