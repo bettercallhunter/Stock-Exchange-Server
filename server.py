@@ -12,10 +12,6 @@ engine = create_engine(
     "postgresql://postgres:0000@localhost:5432/stock?sslmode=disable")
 Session = sessionmaker(bind=engine)
 
-
-def receiveStr(sfile):
-    num = sfile.readline()
-    return sfile.read(int(num))
     
 
 
@@ -35,11 +31,14 @@ def handleCon(conn, lock, handler):
  
     msg = sfile.read(int(num))
     # print(msg)
-    root = ET.fromstring(msg)
-    response = handler.handle(lock, root)
+    try:
+        root = ET.fromstring(msg)
+        response = handler.handle(lock, root)
+    except Exception as e:
+        print(e)
     # sfile.write(str(len(response)))
     sfile.write(response)
-    print(response)
+    # print(response)
     return
 
 
@@ -72,5 +71,5 @@ class Server(object):
 
 if __name__ == "__main__":
 
-    server = Server(8000, 4)
+    server = Server(12345, 4)
     server.start()

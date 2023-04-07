@@ -12,16 +12,17 @@ class stockhandler:
         self.session = session
 
     def handle(self, lock, root):
-        rootString = ET.tostring(root, encoding='utf8', method='xml').decode()
-        print(rootString)
+        # rootString = ET.tostring(root, encoding='utf8', method='xml').decode()
+        # print(rootString)
         if root.tag == "create":
             responseRoot = self.handleCreate(lock, root)
 
         elif root.tag == "transactions":
             responseRoot = self.handleTransactions(lock, root)
-        responseString = ET.tostring(
-            responseRoot, encoding='utf8', method='xml').decode()
-
+        else:
+            raise Exception ("Invalid request")
+    
+        responseString = ET.tostring(responseRoot, encoding='utf8', method='xml').decode()
         return responseString
 
     def handleCancel(self, Responseroot, child, account_id):
@@ -97,6 +98,8 @@ class stockhandler:
                 self.handleCancel(Responseroot, child, root.attrib['id'])
             elif child.tag == 'query':
                 self.handleQuery(Responseroot, child)
+            else:
+                raise Exception ("Invalid request")
         return Responseroot
 
     def handleOrder(self, lock, Responseroot, child, account_id) -> None:
@@ -147,14 +150,14 @@ class stockhandler:
             self.session.commit()
         order_response(Responseroot, True, sym, amount,
                        limit, "ok", Transaction_id)
-        print("order placed")
+        # print("order placed")
         match_order(self.session, sym)
 
     def handleCreate(self, lock, root):
         Responseroot = ET.Element('results')
         for child in root:
             child_string = ET.tostring(child, encoding='utf8', method='xml')
-            print(child_string)
+            # print(child_string)
             if child.tag == 'account':
                 id = child.attrib['id']
                 balance = child.attrib['balance']
