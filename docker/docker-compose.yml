@@ -9,8 +9,6 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=0000
     volumes:
-      - ./db.sql:/docker-entrypoint-initdb.d/db.sql
-      - ./init_sql:/docker-entrypoint-initdb.d
       - data-volume:/var/lib/postgresql/data
     expose:
       - "5432"
